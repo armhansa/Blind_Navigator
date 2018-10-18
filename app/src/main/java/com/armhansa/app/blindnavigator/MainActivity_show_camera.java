@@ -158,8 +158,6 @@ public class MainActivity_show_camera extends AppCompatActivity
 
 
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
-        // Declare the output variables
-        Mat result;
         // Get Image Frames From Phone Camera
         mRgba = inputFrame.rgba();
 
@@ -174,11 +172,11 @@ public class MainActivity_show_camera extends AppCompatActivity
         // Edge detection
         Imgproc.Canny(bwYellow, mCanny, 50, 200, 3, false);
         // Get Line Mat From Image
-        result = getHoughTransform(mCanny, 2, 1, Math.PI/180, 190);
+        getHoughTransform(mCanny, 2, 1, Math.PI/180, 190);
 
         // Combine SrcImage and Line Detected
-        Core.add(bwYellow, getBlueChannel(result), result);
-        return result; // This function must return
+        Core.add(bwYellow, getBlueChannel(mLine), mLine);
+        return mLine; // This function must return
 
     }
 
