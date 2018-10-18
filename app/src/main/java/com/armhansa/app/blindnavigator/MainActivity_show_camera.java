@@ -5,7 +5,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.TextView;
 
 import org.opencv.android.JavaCameraView;
 import org.opencv.android.BaseLoaderCallback;
@@ -18,7 +20,12 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+
+import java.util.ArrayList;
+
+import static org.opencv.core.CvType.CV_32FC1;
 
 public class MainActivity_show_camera extends AppCompatActivity
         implements CameraBridgeViewBase.CvCameraViewListener2 {
@@ -29,6 +36,9 @@ public class MainActivity_show_camera extends AppCompatActivity
     // Loads camera view of OpenCV for us to use. This lets us see using OpenCV
     private CameraBridgeViewBase mOpenCvCameraView;
 
+    // Initial View
+    private TextView showMethod;
+
     // Used in Camera selection from menu (when implemented)
     private boolean              mIsJavaCamera = true;
     private MenuItem             mItemSwitchCamera = null;
@@ -38,10 +48,15 @@ public class MainActivity_show_camera extends AppCompatActivity
     Mat mRgbaF;
     Mat mRgbaT;
 
+    // For Switch Method Color
+    private boolean useRgb = false;
+
     // For do somethings with frame
-    private Mat mGray;
+    private Mat mHsv;
     private Mat mCanny;
     private Mat mLine;
+
+    private Mat bwYellow;
 
     // Will Hold width and height of view
     private int width;
@@ -80,10 +95,11 @@ public class MainActivity_show_camera extends AppCompatActivity
         setContentView(R.layout.show_camera);
 
         mOpenCvCameraView = (JavaCameraView) findViewById(R.id.show_camera_activity_java_surface_view);
-
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
-
         mOpenCvCameraView.setCvCameraViewListener(this);
+
+        showMethod = findViewById(R.id.show_method);
+        showMethod.setText(R.string.hsv_method);
     }
 
     @Override
@@ -114,79 +130,157 @@ public class MainActivity_show_camera extends AppCompatActivity
     }
 
     public void onCameraViewStarted(int width, int height) {
-
         this.width = width;
         this.height = height;
 
-        mRgba = new Mat(height, width, CvType.CV_8UC4);
-        mRgbaF = new Mat(height, width, CvType.CV_8UC4);
-        mRgbaT = new Mat(width, width, CvType.CV_8UC4);
+        Log.d(TAG, "OnStart: width="+width+" height="+height);
 
-        mGray = new Mat(width, width, CvType.CV_8UC4);
-        mCanny = new Mat(width, width, CvType.CV_8UC4);
-        mLine = new Mat(width, width, CvType.CV_8UC4);
+        mRgba = new Mat(height, width, CvType.CV_8UC4);
+        mHsv = new Mat(height, width, CvType.CV_8UC4);
+        bwYellow = new Mat(height, width, CvType.CV_8UC4);
+        mCanny = new Mat(width, height, CvType.CV_8UC4);
+
     }
 
     public void onCameraViewStopped() {
         mRgba.release();
     }
 
+
+
+
+
+
+
+
+
+
+
+
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
-
         // Declare the output variables
-        Mat result = new Mat(height, width, CvType.CV_8UC4);
-
-        // TODO Auto-generated method stub
+        Mat result;
+        // Get Image Frames From Phone Camera
         mRgba = inputFrame.rgba();
-        // Rotate mRgba 90 degrees
-        Core.transpose(mRgba, mRgbaT);
-        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0,0, 0);
-        Core.flip(mRgbaF, mRgba, 1 );
 
-        // To GrayScale
-        Imgproc.cvtColor(mRgba, mGray, Imgproc.COLOR_RGB2GRAY);
-
+//        setOrientationView(mRgba); // For use in Portrait
+        // RGB COLOR to HSV COLOR
+        Imgproc.cvtColor(mRgba, mHsv, Imgproc.COLOR_RGB2HSV);
+        // Separate Braille Block Color From Frame
+        if(useRgb) Core.inRange(mRgba, new Scalar(150, 150, 0, 0), new Scalar(255, 255, 150, 255), bwYellow);
+        else Core.inRange(mHsv, new Scalar(20, 100, 10), new Scalar(40, 255, 255), bwYellow);
+        // Image Dilation
+        Imgproc.dilate(bwYellow, bwYellow, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, 2)));
         // Edge detection
-        Imgproc.Canny(mGray, mCanny, 50, 200, 3, false);
-
-        getHoughTransform(mCanny, result, 1, Math.PI/180, 50);
+        Imgproc.Canny(bwYellow, mCanny, 50, 200, 3, false);
+        // Get Line Mat From Image
+        result = getHoughTransform(mCanny, 2, 1, Math.PI/180, 190);
 
         // Combine SrcImage and Line Detected
-        Core.add(mRgba, result, result);
-
+        Core.add(bwYellow, getBlueChannel(result), result);
         return result; // This function must return
+
     }
 
-    public void getHoughTransform(Mat image, Mat result, double rho, double theta, int threshold) {
-        Mat lines = new Mat();
-        Imgproc.HoughLines(image, lines, rho, theta, threshold);
 
-        for (int i = 0; i < lines.cols(); i++) {
-            double data[] = lines.get(0, i);
-            if(data != null && data.length > 0) {   // Add to protect when data null
+
+
+
+
+
+
+
+
+
+
+
+    private void reduceSize(Mat src, float ratio) {
+        Imgproc.resize(src, src, new Size(mHsv.width()/ratio, mHsv.height()/ratio));
+    }
+
+    private void setOrientationView(Mat src) {
+        // Rotate mRgba 90 degrees
+        Core.transpose(src, mRgbaT);
+        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0,0, 0);
+        Core.flip(mRgbaF, src, 1 );
+
+    }
+
+    public Mat getHoughTransform(Mat image, int numberLines, double rho, double theta, int threshold) {
+        Mat lines = new Mat();
+        mLine = new Mat(height, width, CvType.CV_8UC4);
+        Mat eachLine = new Mat(height, width, CvType.CV_8UC4);
+        Imgproc.HoughLines(image, lines, rho, theta, threshold);
+        for (int i = 0; i < min(numberLines, lines.rows()); i++) {
+            double data[] = lines.get(i, 0);
+
+            if (data != null && data.length > 0) {   // Add to protect when data null
                 double rho1 = data[0];
                 double theta1 = data[1];
                 double cosTheta = Math.cos(theta1);
                 double sinTheta = Math.sin(theta1);
-                double x0 = cosTheta * rho1;
-                double y0 = sinTheta * rho1;
-                Point pt1 = new Point(x0 + 10000 * (-sinTheta), y0 + 10000 * cosTheta);
-                Point pt2 = new Point(x0 - 10000 * (-sinTheta), y0 - 10000 * cosTheta);
-                Imgproc.line(result, pt1, pt2, new Scalar(0, 0, 255), 2);
+                double x = cosTheta * rho1;
+                double y = sinTheta * rho1;
+
+                // Position of X, Y point 1 and 2
+                double x1 = x + 10000 * (-sinTheta);
+                double y1 = y + 10000 * cosTheta;
+
+                double x2 = x - 10000 * (-sinTheta);
+                double y2 = y - 10000 * cosTheta;
+
+                Point pt1 = new Point(x1, y1);
+                Point pt2 = new Point(x2, y2);
+
+                Imgproc.line(eachLine, pt1, pt2, new Scalar(0, 0, 255), 2);
+                // Sum All Line in this frame
+                Core.add(eachLine, mLine, mLine);
+
             }
         }
+        return mLine;
     }
 
-    public Mat getHoughPTransform(Mat image, double rho, double theta, int threshold) {
-        Mat result = new Mat(width, width, CvType.CV_8UC4);
-        Mat lines = new Mat();
-        Imgproc.HoughLinesP(image, lines, rho, theta, threshold);
+    private Mat getBlueChannel(Mat src) {
+        return getSplitChannels(src, 0);
+    }
+    private Mat getGreenChannel(Mat src) {
+        return getSplitChannels(src, 1);
+    }
+    private Mat getRedChannel(Mat src) {
+        return getSplitChannels(src, 2);
+    }
+    private Mat getSplitChannels(Mat src, int channel) {
+        ArrayList<Mat> bgr = new ArrayList<>();
+        Core.split(src, bgr);
+        return bgr.get(channel);
+    }
 
-        for (int i = 0; i < lines.cols(); i++) {
-            double[] val = lines.get(0, i);
-            Imgproc.line(result, new Point(val[0], val[1]), new Point(val[2], val[3]), new Scalar(0, 0, 255), 2);
+    private int min(int value1, int value2) {
+        if(value1 < value2) return value1;
+        else return value2;
+    }
+
+    private Mat hsvToYellowBw(Mat src) {
+        int rows = src.rows();
+        int cols = src.cols();
+        Mat img_bw = Mat.zeros(rows, cols, CV_32FC1);
+        int test = 0;
+        for(int i=0; i<img_bw.rows(); i++) {
+            for(int j=0; j<img_bw.cols(); j++) {
+                double px[] = src.get(i, j);
+                if((px[0] >= 40 && px[0] <= 120) && px[1] >= 40 && px[2] >= 30) {
+                    img_bw.put(i, j, 255);
+                    test++;
+                }
+            }
         }
-        return result;
+        return img_bw;
+    }
+
+    public void switchMethod(View view) {
+        useRgb = !useRgb;
+        showMethod.setText(useRgb ? R.string.rgb_method : R.string.hsv_method);
     }
 
 }
