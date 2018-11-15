@@ -2,4 +2,6 @@
     <string name="app_name">BlindNavigator</string>
     <string name="hsv_method">HSV</string>
     <string name="rgb_method">RGB</string>
+    <string name="hsl_method">HSL</string>
+    <string name="error">Error</string>
 </resources>
