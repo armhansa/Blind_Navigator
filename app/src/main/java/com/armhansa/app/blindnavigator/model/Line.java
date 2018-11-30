@@ -50,7 +50,8 @@ public class Line {
     }
 
     public double getX(double y) {
-        return (y-b)/m;
+        if(theta != 0) return (y-b)/m;
+        else return x;
     }
 
     public Point[] getPoints() {

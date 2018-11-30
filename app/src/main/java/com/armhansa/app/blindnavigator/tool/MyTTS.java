@@ -7,8 +7,7 @@ import android.speech.tts.UtteranceProgressListener;
 import java.util.Locale;
 
 public class MyTTS extends UtteranceProgressListener
-    implements TextToSpeech.OnInitListener
-        , TextToSpeech.OnUtteranceCompletedListener {
+    implements TextToSpeech.OnInitListener {
     private static MyTTS myTTS;
 
     public static MyTTS getInstance(Context context) {
@@ -18,93 +17,60 @@ public class MyTTS extends UtteranceProgressListener
         return myTTS;
     }
 
-    private Context context;
+    public static MyTTS getInstance() {
+        return myTTS;
+    }
+
     private TextToSpeech tts;
+    private boolean isSpeaking = false;
     private Locale locale = Locale.getDefault();
-    private String enginePackageName;
-    private String message;
-    private boolean isRunning;
-    private int speakCount;
 
     public MyTTS(Context context) {
-        this.context = context;
+        tts = new TextToSpeech(context, this);
+        tts.setLanguage(new Locale("th"));
     }
 
-    public void speak(String message) {
-        this.message = message;
-
-        if (tts == null || !isRunning) {
-            speakCount = 0;
-
-            if (enginePackageName != null && !enginePackageName.isEmpty()) {
-                tts = new TextToSpeech(context, this, enginePackageName);
-            } else {
-                tts = new TextToSpeech(context, this);
-            }
-            tts.setOnUtteranceProgressListener(this);
-            isRunning = true;
-        } else {
-            startSpeak();
-        }
+    public void addSpeak(String message) {
+        tts.speak(message, TextToSpeech.QUEUE_ADD, null);
     }
 
-    public MyTTS setEngine(String packageName) {
-        enginePackageName = packageName;
-        return this;
-    }
-
-    public MyTTS setLocale(Locale locale) {
-        this.locale = locale;
-        return this;
-    }
-
-    private void startSpeak() {
-        speakCount++;
-
-        if (locale != null) {
-            tts.setLanguage(locale);
-        }
-
+    public void speakNow(String message) {
         tts.speak(message, TextToSpeech.QUEUE_FLUSH, null);
     }
 
-    private void clear() {
-        speakCount--;
-
-        if (speakCount == 0) {
-            tts.shutdown();
-            isRunning = false;
-        }
+    public boolean isSpeaking() {
+        return tts.isSpeaking();
     }
 
     @Override
     public void onInit(int status) {
         if (status == TextToSpeech.SUCCESS) {
-            startSpeak();
+            addSpeak("โปรดถือมือถือในแนวตั้งและทำมุมก้ม 60 องศาจากพื้น");
         }
     }
 
     @Override
-    public void onStart(String s) {}
+    public void onStart(String s) {
+        isSpeaking = true;
+    }
 
     @Override
     public void onDone(String s) {
-        clear();
+        isSpeaking = false;
     }
 
     @Override
     public void onError(String s) {
-        clear();
+        isSpeaking = false;
     }
 
     @Override
-    public void onError(String utteranceId, int errorCode) {
-        clear();
-    }
-
-    @Override
-    public void onUtteranceCompleted(String s) {
-        clear();
+    public void onStop(String utteranceId, boolean interrupted) {
+        speakNow("");
+        super.onStop(utteranceId, interrupted);
+        if (tts != null) {
+            tts.shutdown();
+        }
     }
 
 }
