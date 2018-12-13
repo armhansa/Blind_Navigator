@@ -1,6 +1,6 @@
 package com.armhansa.app.blindnavigator.tool;
 
-import android.util.Log;
+import com.armhansa.app.blindnavigator.model.CaseName;
 
 import java.util.Calendar;
 
@@ -16,31 +16,29 @@ public class StatusAlert {
     private long lastAlertTime;
 
     private Summary summary;
-//    private String status[];
     private float distanceStop;
-//    private int countStatus[]; // ["Normal", "Turn Left", "Turn Right", "Stop", "AbNormal"]
 
     private int alertTime = 5000;
 
     private MyTTS myTTS;
 
-    public static StatusAlert getInstance(int width, int height) {
+    public static StatusAlert getInstance() {
         if (alertInstance == null) {
-            alertInstance = new StatusAlert(width, height);
+            alertInstance = new StatusAlert();
         }
         return alertInstance;
     }
 
-    private StatusAlert(int width, int height) {
-        lineStore = BrailleBlockLine.getInstance(width, height);
+    private StatusAlert() {
+        lineStore = BrailleBlockLine.getInstance();
         myTTS = MyTTS.getInstance();
         lastAlertTime = Calendar.getInstance().getTimeInMillis();
-        summary = new Summary(new String[]{"Normal", "Facing Left", "Facing Right"
-                , "Turn Left", "Turn Right", "Stop", "AbNormal"});
+        summary = new Summary();
     }
 
     private void reset() {
         distanceStop = 0;
+        summary.reset();
     }
 
     public void run() {
@@ -48,13 +46,13 @@ public class StatusAlert {
         long currentTime = Calendar.getInstance().getTimeInMillis();
         if (currentTime - lastAlertTime >= alertTime) {
             // Alert
-            String maxCase = summary.getMax();
+            int maxCase = summary.getMax();
             if (isStart) {
                 // 1 - Not Found Way on Start
                 //      Start and still not found way (start && error > normal)
-                if (maxCase.equals("AbNormal")) {
+                if (maxCase == CaseName.CASE_NOT_FOUND) {
                     myTTS.addSpeak("โปรดยืนบนทางเดิน");
-                    lastAlertTime = currentTime;
+                    lastAlertTime = currentTime+1000;
                 }
                 // 2 - Found Way (First Time)
                 //      Start found way (start && normal > error)) !start
@@ -64,76 +62,34 @@ public class StatusAlert {
                     isStart = false;
                 }
             } else {
-                switch (maxCase) {
-                    // 3 - Walk Straight
-                    //      (!start && normal > error && thetaL is YMirror thetaR)
-                    case "Normal":
-                        // Tids Tids
-                        myTTS.addSpeak("เดินตรงต่อไป");
-                        lastAlertTime = currentTime;
-                        break;
-                    // 4 - Facing Left/Right
-                    //      (!start && normal > error)
-                    case "Facing Left":
-                        myTTS.addSpeak("โปรดหันกล้องไปทางซ้าย");
-                        lastAlertTime = currentTime;
-                        break;
-                    case "Facing Right":
-                        myTTS.addSpeak("โปรดหันกล้องไปทางขวา");
-                        lastAlertTime = currentTime;
-                        break;
-                    // 5 - Stop in x Distance matter
-                    //      (!start && normal > error && found 3thLine && haven'tBlockOnIntersectPoint)
-                    case "Stop":
-                        myTTS.addSpeak("อีกประมาณ " + (int)distanceStop + "เมตร เป็นทางหยุดเดิน");
-                        lastAlertTime = currentTime;
-                        break;
-                    // 6 - Turn Left/Right
-                    //      (!start && error > normal)
-                    case "Turn Left":
-                        myTTS.addSpeak("ทางแยกไปทางซ้าย");
-                        lastAlertTime = currentTime;
-                        break;
-                    case "Turn Right":
-                        myTTS.addSpeak("ทางแยกไปทางขวา");
-                        lastAlertTime = currentTime;
-                        break;
-                    case "Three Ways":
-                        myTTS.addSpeak("พบทางแยกไป");
-                        lastAlertTime = currentTime;
-                        break;
-                    case "AbNormal":
-                        myTTS.addSpeak("หาทางเดินไม่เจอ");
-                        lastAlertTime = currentTime;
-                        break;
-                    case "End":
-                        myTTS.addSpeak("สิ้นสุดทางเดิน");
-                        lastAlertTime = currentTime;
-                        break;
-                }
-                // (7 - Scan Crossroad separate from Found Stop)
-                //      (check block found in left/right)
-                //      (may have a lot of delays)
+                if (maxCase == CaseName.CASE_FOUND) myTTS.addSpeak("เดินตรงต่อไป");
+                else if (maxCase == CaseName.CASE_FACING_LEFT) myTTS.addSpeak("โปรดหันกล้องไปทางซ้าย");
+                else if (maxCase == CaseName.CASE_FACING_RIGHT) myTTS.addSpeak("โปรดหันกล้องไปทางขวา");
+                else if (maxCase == CaseName.CASE_THREE_WAYS) myTTS.addSpeak("พบทางแยกไป");
+                else if (maxCase == CaseName.CASE_NOT_FOUND) myTTS.addSpeak("หาทางเดินไม่เจอ");
+                else if (maxCase == CaseName.CASE_END) myTTS.addSpeak("สิ้นสุดทางเดิน");
+                else if (maxCase == CaseName.CASE_STOP)
+                    myTTS.addSpeak("อีกประมาณ " + (int) distanceStop + "เมตร เป็นทางหยุดเดิน");
+                else if (maxCase == CaseName.CASE_TURN_LEFT)
+                    myTTS.addSpeak("อีกประมาณ " + (int) distanceStop + "เมตร ทางแยกไปทางซ้าย");
+                else if (maxCase == CaseName.CASE_TURN_RIGHT)
+                    myTTS.addSpeak("อีกประมาณ " + (int) distanceStop + "เมตร ทางแยกไปทางขวา");
+                lastAlertTime = currentTime;
             }
             reset();
-            summary.reset();
         }
 
         // Process
-        String tmpStatus[] = lineStore.getStatus();
-        Log.d(TAG, "run: "+tmpStatus[0]);
+        int tmpStatus[] = lineStore.getStatus();
         switch (tmpStatus[0]) {
-            case "Found":
-                summary.add("Normal");break;
-            case "Facing Left":
-                summary.add("Facing Left");break;
-            case "Facing Right":
-                summary.add("Facing Right");break;
-            case "Stop":
-                summary.add("Stop");
-                distanceStop = Float.parseFloat(tmpStatus[1]);break;
-            case "!Found":
-                summary.add("AbNormal");break;
+            case CaseName.CASE_STOP:
+            case CaseName.CASE_THREE_WAYS:
+            case CaseName.CASE_TURN_LEFT:
+            case CaseName.CASE_TURN_RIGHT:
+                summary.add(tmpStatus[0]);
+                distanceStop = tmpStatus[1];break;
+            default :
+                summary.add(tmpStatus[0]);
         }
 
     }

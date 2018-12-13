@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BlindNavigator</string>
+    <string name="app_name">Navigate Me</string>
     <string name="hsv_method">HSV</string>
     <string name="rgb_method">RGB</string>
     <string name="hsl_method">HSL</string>

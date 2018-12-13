@@ -15,6 +15,8 @@ public class Line {
     private double x;
     private double y;
 
+    private boolean isShow = true;
+
     private int distance = 10000;
 
     public Line(double rho, double theta) {
@@ -66,4 +68,11 @@ public class Line {
         return new Point[]{new Point(x1, y1), new Point(x2, y2)};
     }
 
+    public void setShow(boolean show) {
+        isShow = show;
+    }
+
+    public boolean isShow() {
+        return isShow;
+    }
 }

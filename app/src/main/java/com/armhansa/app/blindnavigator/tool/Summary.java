@@ -4,23 +4,20 @@ import java.util.HashMap;
 
 public class Summary {
 
-    private HashMap<String, Integer> holder;
+    private HashMap<Integer, Integer> holder;
 
-    public Summary(String keys[]) {
+    public Summary() {
         holder = new HashMap<>();
-        for(String i: keys) {
-            holder.put(i, 0);
-        }
     }
 
-    public void add(String key) {
-        holder.put(key, holder.get(key)+1);
+    public void add(int key) {
+        holder.put(key, holder.keySet().contains(key) ? holder.get(key)+1 : 1);
     }
 
-    public String getMax() {
+    public int getMax() {
         int maxCount = -1;
-        String maxCase = "";
-        for(String i: holder.keySet()) {
+        int maxCase = -1;
+        for(int i: holder.keySet()) {
             if(holder.get(i) > maxCount) {
                 maxCount = holder.get(i);
                 maxCase = i;
@@ -30,7 +27,7 @@ public class Summary {
     }
 
     public void reset() {
-        for(String i: holder.keySet()) {
+        for(int i: holder.keySet()) {
             holder.put(i, 0);
         }
     }

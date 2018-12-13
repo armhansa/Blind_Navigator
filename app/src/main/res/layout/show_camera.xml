@@ -11,11 +11,10 @@
         android:visibility="gone"
         android:id="@+id/show_camera_activity_java_surface_view"
         opencv:show_fps="true"
-        opencv:camera_id="any"
-        android:onClick="switchMethod"/>
+        opencv:camera_id="any"/>
 
     <TextView
-        android:id="@+id/show_method"
+        android:id="@+id/show_angle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
@@ -24,16 +23,5 @@
         android:textSize="35sp"
         opencv:layout_constraintEnd_toEndOf="parent"
         opencv:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/show_theta"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginBottom="8dp"
-        android:textColor="#99FF00"
-        android:textSize="35sp"
-        opencv:layout_constraintBottom_toBottomOf="parent"
-        opencv:layout_constraintStart_toStartOf="parent" />
 
 </android.support.constraint.ConstraintLayout>
