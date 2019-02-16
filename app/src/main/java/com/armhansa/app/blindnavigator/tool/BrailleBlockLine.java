@@ -115,27 +115,24 @@ public class BrailleBlockLine implements SensorEventListener {
 
     public int[] getStatus() {
         // For reset stop line
-        if (firstStopLine == null && ++notStopCount > 60) {
+        if (firstStopLine == null && ++notStopCount > 20) {
             stopX = 0;
             hasStopLane = false;
             notStopCount = 0;
         }
         if (isStandOnLane()) {
             Point intersect = getIntersect();
-            if (firstStopLine != null && secondStopLine != null) {
-                int distance = (int) (((width-stopX)/width)*Math.pow(angleY, 1.5));
-                Log.d(TAG, "Distance to Stop: (("+width+"-"+stopX+")/"+width+")*"+Math.pow(angleY, 1.5));
-                Log.d(TAG, "Distance to Stop: = "+distance);
-                Log.d(TAG, "Distance to Stop: ______________________________________________");
-                return new int[]{getTypeOfStop(), distance};
-            } else if (intersect.y > height*3/4) {
+            if (intersect.y > height*3/4) {
                 return new int[]{CaseName.CASE_FACING_LEFT};
             } else if (intersect.y < height/4) {
                 return new int[]{CaseName.CASE_FACING_RIGHT};
-            }
-            return new int[]{CaseName.CASE_FOUND};
-        }
-        return new int[]{CaseName.CASE_NOT_FOUND};
+            } else if (firstStopLine != null && secondStopLine != null) {
+                double distance = (Math.pow((width-stopX)/width, 2)*Math.pow(angleY, 1.5));
+                Log.d(TAG, "Distance to Stop: = "+distance);
+                Log.d(TAG, "Distance to Stop: ______________________________________________");
+                return new int[]{getTypeOfStop(), (int) distance};
+            } else return new int[]{CaseName.CASE_FOUND};
+        } else return new int[]{CaseName.CASE_NOT_FOUND};
     }
 
     public Point getIntersect() {
@@ -174,7 +171,8 @@ public class BrailleBlockLine implements SensorEventListener {
         if (theta < getPi(5) || theta > getPi(175)) {
             if (hasStopLane) {
                 Log.d(TAG, "valueA max: "+(stopX+50));
-                return Math.max(lastIntersectX+50, stopX-200) <= lineX && lineX <= Math.max(lastIntersectX+150, stopX+50);
+                return Math.max(lastIntersectX+50, stopX-200) <= lineX
+                        && lineX <= Math.max(Math.max(300, lastIntersectX+300), stopX+200);
             } else {
                 return Math.max(50, lastIntersectX+50) <= lineX
                         && lineX <= Math.max(300, lastIntersectX+300);
@@ -186,7 +184,7 @@ public class BrailleBlockLine implements SensorEventListener {
         if (firstStopLine == null) {
             firstStopLine = line;
             double newStopX = line.getX(height/2);
-            if (stopX != 0 && Math.abs(newStopX-stopX) <= 50) stopX = newStopX;
+            if (stopX != 0 && Math.abs(newStopX-stopX) <= 150) stopX = newStopX;
             else if (stopX == 0) stopX = newStopX;
         } else if(secondStopLine == null) {
             if (firstStopLine.getX(width/2) > line.getX(width/2)) {
@@ -195,14 +193,14 @@ public class BrailleBlockLine implements SensorEventListener {
                 secondStopLine = firstStopLine;
                 firstStopLine = line;
                 double newStopX = line.getX(height/2);
-                if (stopX != 0 && Math.abs(newStopX-stopX) <= 50) stopX = newStopX;
+                if (stopX != 0 && Math.abs(newStopX-stopX) <= 150) stopX = newStopX;
                 else if (stopX == 0) stopX = newStopX;
             }
         } else {
             if (line.getX(width/2) > firstStopLine.getX(width/2)) {
                 firstStopLine = line;
                 double newStopX = line.getX(height/2);
-                if (stopX != 0 && Math.abs(newStopX-stopX) <= 50) stopX = newStopX;
+                if (stopX != 0 && Math.abs(newStopX-stopX) <= 150) stopX = newStopX;
                 else if (stopX == 0) stopX = newStopX;
             } else if (line.getX(width/2) < secondStopLine.getX(width/2)) {
                 secondStopLine = line;
@@ -264,7 +262,7 @@ public class BrailleBlockLine implements SensorEventListener {
     public void getMaxLineStop(Mat line) {
         double max;
         if (hasStopLane) {
-            max = stopX+50;
+            max = Math.max(Math.max(300, lastIntersectX+300), stopX+200);
         } else {
             max = Math.max(300, lastIntersectX+300);
         }

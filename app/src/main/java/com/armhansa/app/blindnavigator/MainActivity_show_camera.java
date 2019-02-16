@@ -199,7 +199,7 @@ public class MainActivity_show_camera extends AppCompatActivity
 //                , new Scalar(60, 240, 255)
 //                , bwYellow);
 //        else
-        Core.inRange(mHsv, new Scalar(10, 10, 40), new Scalar(35, 255, 255), bwYellow);
+        Core.inRange(mHsv, new Scalar(10, 40, 40), new Scalar(35, 255, 255), bwYellow);
         Log.d(TAG, "Width, Height(bwYellow) : ("+bwYellow.width()+"*"+bwYellow.height()+")");
 
         // Image Dilation
@@ -210,7 +210,7 @@ public class MainActivity_show_camera extends AppCompatActivity
         // Edge detection
         Imgproc.Canny(bwYellow, mCanny, 50, 200, 3, false);
         // Get Line Mat From Image and Combine SrcImage and Line Detected
-        getHoughTransform(mCanny, 15, 1, Math.PI/180, 100);
+        getHoughTransform(mCanny, 10, 1, Math.PI/180, 100);
         Log.d(TAG, "Width, Height(mLine) : ("+mLine.width()+"*"+mLine.height()+")");
         Core.add(bwYellow, mLine, mLine);
         // Crop image around left/right stop lane

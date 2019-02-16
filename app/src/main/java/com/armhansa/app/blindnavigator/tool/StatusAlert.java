@@ -67,14 +67,17 @@ public class StatusAlert {
                 else if (maxCase == CaseName.CASE_FACING_RIGHT) myTTS.addSpeak("โปรดหันกล้องไปทางขวา");
                 else if (maxCase == CaseName.CASE_NOT_FOUND) myTTS.addSpeak("หาทางเดินไม่เจอ");
                 else if (maxCase == CaseName.CASE_END) myTTS.addSpeak("สิ้นสุดทางเดิน");
-                else if (maxCase == CaseName.CASE_STOP)
-                    myTTS.addSpeak("อีกประมาณ " + (int) distanceStop + "เมตร เป็นทางหยุดเดิน");
-                else if (maxCase == CaseName.CASE_TURN_LEFT)
-                    myTTS.addSpeak("อีกประมาณ " + (int) distanceStop + "เมตร ทางแยกไปทางซ้าย");
-                else if (maxCase == CaseName.CASE_TURN_RIGHT)
-                    myTTS.addSpeak("อีกประมาณ " + (int) distanceStop + "เมตร ทางแยกไปทางขวา");
-                else if (maxCase == CaseName.CASE_THREE_WAYS)
-                    myTTS.addSpeak("อีกประมาณ " + (int) distanceStop + "เมตร ทางแยกซ้ายและขวา");
+                else {
+                    if (maxCase == CaseName.CASE_STOP)
+                        myTTS.addSpeak("อีกประมาณ " + (int) distanceStop + "เมตร เป็นทางหยุดเดิน");
+                    else if (maxCase == CaseName.CASE_TURN_LEFT)
+                        myTTS.addSpeak("อีกประมาณ " + (int) distanceStop + "เมตร ทางแยกไปทางซ้าย");
+                    else if (maxCase == CaseName.CASE_TURN_RIGHT)
+                        myTTS.addSpeak("อีกประมาณ " + (int) distanceStop + "เมตร ทางแยกไปทางขวา");
+                    else if (maxCase == CaseName.CASE_THREE_WAYS)
+                        myTTS.addSpeak("อีกประมาณ " + (int) distanceStop + "เมตร ทางแยกซ้ายและขวา");
+                    if (distanceStop < 2) currentTime += 5000;
+                }
                 lastAlertTime = currentTime;
             }
             reset();
